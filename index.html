@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192241"></script>
-<script src="ikon.js?v=202611192241"></script>
+<script src="data.js?v=202611192243"></script>
+<script src="ikon.js?v=202611192243"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -204,8 +204,8 @@
       <label>Start<select id="p-start"></select></label>
       <div id="p-via"></div>
       <button id="p-leggtil" class="lenkjeknapp" type="button">Legg til viapunkt</button>
-      <label class="rund"><input type="checkbox" id="p-rund"> Rundtur (tilbake til start)</label>
       <label id="p-mal-l">Mål<select id="p-mal"></select></label>
+      <label class="rund"><input type="checkbox" id="p-rund"> Rundtur (tilbake til start etter målet)</label>
       <p id="p-melding" class="melding" hidden></p>
       <button id="p-lag" class="hovudknapp" type="button">Lag tur</button>
       <p class="hjelp liten">Tida er rekna med 4 km/t og 10 min ekstra per 100 høgdemeter. Lia får eiga tid fordi ho er så ulendt.</p>
@@ -654,7 +654,7 @@ function leggTilVia(verdi = '') {
   rad.append(l, x); $('p-via').appendChild(rad);
 }
 $('p-leggtil').addEventListener('click', () => leggTilVia());
-$('p-rund').addEventListener('change', () => { $('p-mal-l').hidden = $('p-rund').checked; visPlanPunkt(); });
+$('p-rund').addEventListener('change', visPlanPunkt);
 $('p-start').addEventListener('change', visPlanPunkt);
 $('p-mal').addEventListener('change', visPlanPunkt);
 if (!NETT.stader.length) $('planknapp').style.display = 'none';
@@ -664,8 +664,7 @@ $('p-lag').addEventListener('click', lagEigenTur);
 
 function planIdar() {
   const start = $('p-start').value, via = [...$('p-via').querySelectorAll('select')].map(s => s.value).filter(Boolean);
-  const mal = $('p-rund').checked ? start : $('p-mal').value;
-  return { start, via, mal };
+  return { start, via, mal: $('p-mal').value, rund: $('p-rund').checked };
 }
 function settPlanPunkt(liste) {
   planPunktData = { type: 'FeatureCollection', features: liste.map(([id, nr]) =>
@@ -676,22 +675,24 @@ function visPlanPunkt() {
   const { start, via, mal } = planIdar(), l = [];
   if (start) l.push([start, 'S']);
   via.forEach((v, i) => l.push([v, String(i + 1)]));
-  if (mal && !$('p-rund').checked) l.push([mal, 'M']);
+  if (mal && mal !== start) l.push([mal, 'M']);
   settPlanPunkt(l);
 }
 function melding(t) { const m = $('p-melding'); m.hidden = !t; m.textContent = t || ''; }
 
 function lagEigenTur() {
-  const { start, via, mal } = planIdar();
+  // Rundtur: start → via → mål → tilbake til start. Utan mål går rundturen berre innom viapunkta.
+  const { start, via, mal, rund } = planIdar();
   if (!start) return melding('Vel kvar turen skal starte.');
-  if (!mal) return melding('Vel mål, eller kryss av for rundtur.');
-  const idar = [start, ...via, mal];
+  if (!mal && !rund) return melding('Vel mål, eller kryss av for rundtur.');
+  const stopp = [start, ...via, ...(mal ? [mal] : [])];
+  const idar = rund ? [...stopp, start] : stopp;
   const r = byggRute(idar.map(id => STAD[id].node));
-  if (!r) return melding(start === mal && !via.length
-    ? 'For ein rundtur må du leggje til minst eitt viapunkt.' : 'Fann inga rute mellom desse stadene.');
+  if (!r) return melding(stopp.length < 2 || stopp.every(x => x === start)
+    ? 'Vel mål eller legg til viapunkt, så turen går ein stad.' : 'Fann inga rute mellom desse stadene.');
   melding('');
-  const namn = $('p-rund').checked
-    ? 'Rundtur frå ' + STAD[start].namn + (via.length ? ' via ' + via.map(v => STAD[v].namn).join(', ') : '')
+  const namn = rund
+    ? 'Rundtur frå ' + STAD[start].namn + ' via ' + stopp.slice(1).map(v => STAD[v].namn).join(', ')
     : idar.map(id => STAD[id].namn).join(' → ');
   const merk = [];
   if (r.lia) merk.push('Ruta går gjennom Lia. Lia er ulendt med klatring på alle fire, berre for folk i god form. Ferdselsforbod 1. mai til 31. juli (Haramsøya vestside naturreservat).');
@@ -701,7 +702,7 @@ function lagEigenTur() {
   visTur({ type: 'Feature', geometry: { type: 'LineString', coordinates: r.coords },
     properties: { eigen: true, namn, lengd: r.lengd, stigning: r.stigning, tid: r.tid, popularitet: null,
       skildring: merk.join(' ') || null, parkering: null, profil: r.pr } });
-  history.replaceState(null, '', '#eigen=' + idar.join(',') + ($('p-rund').checked ? ',rund' : ''));
+  history.replaceState(null, '', '#eigen=' + stopp.join(',') + (rund ? ',rund' : ''));
 }
 
 // ───────────── Animasjon ─────────────
@@ -786,8 +787,8 @@ function lesAdresse() {
     $('p-via').innerHTML = '';
     $('p-start').value = idar[0];
     idar.slice(1, -1).forEach(v => leggTilVia(v));
-    $('p-rund').checked = rund; $('p-mal-l').hidden = rund;
-    if (!rund) $('p-mal').value = idar[idar.length - 1];
+    $('p-rund').checked = rund;
+    $('p-mal').value = idar[idar.length - 1];
     visModus('plan'); visPlanPunkt(); lagEigenTur();
   }
 }
