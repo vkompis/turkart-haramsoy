@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192210"></script>
-<script src="ikon.js?v=202611192210"></script>
+<script src="data.js?v=202611192212"></script>
+<script src="ikon.js?v=202611192212"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -19,7 +19,7 @@
     --font: 'Century Gothic', CenturyGothic, 'URW Gothic', 'TeX Gyre Adventor', Poppins, 'Avenir Next', Avenir, sans-serif;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; font-family: var(--font); color: var(--ink); }
+  html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; font-family: var(--font); color: var(--ink); }
   #kart { position: absolute; inset: 0; }
 
   #panel {
@@ -136,9 +136,8 @@
   .teikn details:not([open]) { width: auto; }
   @media (max-width: 700px) {
     /* Mobil: kartet i fullskjerm, turpanelet kjem opp frå botnen når ein trykkjer «Turar» */
-    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 50vh; height: 50dvh; border-radius: 14px 14px 0 0;
-      transform: translateY(105%); transition: transform .25s ease; visibility: hidden; }
-    body.panel-ope #panel { transform: none; visibility: visible; }
+    #panel { display: none; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 50vh; height: 50dvh; border-radius: 14px 14px 0 0; }
+    body.panel-ope #panel { display: flex; }   /* lukka panel tek ingen plass, så sida kan ikkje scrollast */
     #turknapp {
       display: block; position: absolute; left: 50%; transform: translateX(-50%);
       bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 3;
