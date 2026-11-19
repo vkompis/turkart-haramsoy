@@ -75,6 +75,27 @@
     border: 1px solid var(--ink); background: #fff; cursor: pointer; color: var(--ink);
   }
   .filter[hidden] { display: none; }
+  .stilval { display: flex; }
+  .mapboxgl-ctrl-group.stilval button + button { border-top: 0; border-left: 1px solid #ddd; }
+  .stilval button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .teikn { font: 13px var(--font); color: var(--ink); width: 235px; }
+  .teikn summary { cursor: pointer; padding: 7px 10px; font-weight: 600; list-style-position: inside; }
+  .teikn ul { list-style: none; margin: 0; padding: 0 4px 4px; }
+  .teikn .tf-knappar { display: flex; gap: 6px; padding: 0 10px 6px; }
+  .mapboxgl-ctrl-group.teikn button {
+    width: auto; height: auto; display: flex; align-items: center; gap: 8px; border: 0;
+    font: inherit; color: inherit; background: none; cursor: pointer; text-align: left;
+  }
+  .mapboxgl-ctrl-group.teikn .tf-knappar button { padding: 3px 8px; border: 1px solid var(--line); border-radius: 12px; font-size: 12px; }
+  .teikn .tf-liste button { width: 100%; padding: 4px 6px; border-radius: 6px; }
+  .teikn .tf-liste button:hover { background: #f1ece6; }
+  .teikn .tf-liste img { width: 22px; height: 22px; object-fit: contain; }
+  .teikn .tf-liste button[aria-pressed="false"] { opacity: .35; }
+  .teikn .tf-liste button[aria-pressed="false"] span { text-decoration: line-through; }
+  .teikn .tf-linjer { border-top: 1px solid var(--line); padding: 6px 10px 8px; color: var(--muted); font-size: 12px; }
+  .teikn .tf-linjer li { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+  .tf-sti { flex: none; width: 22px; height: 4px; border-radius: 2px; background: #E8762B; }
+  .tf-forbod { flex: none; width: 22px; height: 0; border-top: 2px dashed #C0392B; }
   .stilbytar button { width: auto !important; padding: 0 10px; font: 12px var(--font); }
   .stipopup { font: 13px var(--font); display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
   .stipopup strong { margin-bottom: 4px; }
@@ -146,7 +167,7 @@ const STILAR = {
   satellitt: 'mapbox://styles/mapbox/satellite-streets-v12',
   kart: 'mapbox://styles/mapbox/outdoors-v12'
 };
-let stilNo = 'satellitt';
+let stilNo = 'kart';
 const RUTEFARGE = '#FF5A1F';      // farge på den valde, animerte ruta
 const ANIMASJON_MS = 4000;        // kor lenge teikninga av ruta varer
 // ──────────────────────────────────────────
@@ -178,23 +199,22 @@ map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right');
 class StilBytar {
   onAdd() {
     this.el = document.createElement('div');
-    this.el.className = 'mapboxgl-ctrl mapboxgl-ctrl-group stilbytar';
-    this.b = document.createElement('button');
-    this.b.type = 'button';
-    this.oppdater();
-    this.b.addEventListener('click', () => {
-      stilNo = stilNo === 'satellitt' ? 'kart' : 'satellitt';
-      stoppAnim();
-      map.setStyle(STILAR[stilNo]);
-      this.oppdater();
+    this.el.className = 'mapboxgl-ctrl mapboxgl-ctrl-group stilbytar stilval';
+    this.el.setAttribute('role', 'group'); this.el.setAttribute('aria-label', 'Bakgrunnskart');
+    this.knappar = [['kart', 'Kart'], ['satellitt', 'Satellitt']].map(([stil, tekst]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = tekst; b.dataset.stil = stil;
+      b.addEventListener('click', () => {
+        if (stil === stilNo) return;
+        stilNo = stil; stoppAnim(); map.setStyle(STILAR[stilNo]); this.oppdater();
+      });
+      this.el.appendChild(b);
+      return b;
     });
-    this.el.appendChild(this.b);
+    this.oppdater();
     return this.el;
   }
-  oppdater() {
-    const tekst = stilNo === 'satellitt' ? 'Vis kart' : 'Vis satellitt';
-    this.b.textContent = tekst; this.b.setAttribute('aria-label', tekst);
-  }
+  oppdater() { this.knappar.forEach(b => b.setAttribute('aria-pressed', b.dataset.stil === stilNo)); }
   onRemove() { this.el.remove(); }
 }
 map.addControl(new StilBytar(), 'top-right');
@@ -212,6 +232,43 @@ class AlleStiar {
   onRemove() { this.el.remove(); }
 }
 map.addControl(new AlleStiar(), 'top-right');
+
+// ───────────── Teiknforklaring med filter ─────────────
+// Rekkjefølgje som på plakaten. Klikk på ei rad for å skjule/vise symbolet.
+const KATEGORIAR = [['turmal', 'Turmål'], ['teltplass', 'Teltplass'], ['parkering', 'Parkering'],
+  ['bobilparkering', 'Bobilparkering'], ['badeplass', 'Badeplass'], ['vannsport', 'Vannsport'],
+  ['wc', 'Toalett'], ['butikk', 'Butikk']].filter(([k]) => window.TURIKON && TURIKON[k]);
+const skjult = new Set();
+class Teiknforklaring {
+  onAdd() {
+    this.el = document.createElement('div');
+    this.el.className = 'mapboxgl-ctrl mapboxgl-ctrl-group teikn';
+    const open = window.innerWidth > 700 ? ' open' : '';
+    this.el.innerHTML = `<details${open}><summary>Teiknforklaring</summary>
+      <div class="tf-knappar"><button type="button" data-alle>Vis alle</button><button type="button" data-ingen>Skjul alle</button></div>
+      <ul class="tf-liste">${KATEGORIAR.map(([k, t]) =>
+        `<li><button type="button" data-k="${k}" aria-pressed="true"><img src="${TURIKON[k]}" alt=""><span>${t}</span></button></li>`).join('')}</ul>
+      <ul class="tf-linjer">
+        <li><span class="tf-sti"></span>Sti, tjukkare der fleire går</li>
+        <li><span class="tf-forbod"></span>Ferdselsforbod 1. mai til 31. juli</li>
+      </ul></details>`;
+    this.el.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.k; skjult.has(k) ? skjult.delete(k) : skjult.add(k); brukFilter();
+    }));
+    this.el.querySelector('[data-alle]').addEventListener('click', () => { skjult.clear(); brukFilter(); });
+    this.el.querySelector('[data-ingen]').addEventListener('click', () => { KATEGORIAR.forEach(([k]) => skjult.add(k)); brukFilter(); });
+    return this.el;
+  }
+  onRemove() { this.el.remove(); }
+}
+map.addControl(new Teiknforklaring(), 'top-right');
+
+function brukFilter() {
+  document.querySelectorAll('.tf-liste [data-k]').forEach(b => b.setAttribute('aria-pressed', !skjult.has(b.dataset.k)));
+  if (!map.getLayer || !map.getLayer('fasilitetar')) return;
+  for (const l of ['turmal', 'parkering']) map.setLayoutProperty(l, 'visibility', skjult.has(l) ? 'none' : 'visible');
+  map.setFilter('fasilitetar', skjult.size ? ['!', ['in', ['get', 'type'], ['literal', [...skjult]]]] : null);
+}
 
 map.on('style.load', async () => {
   for (const [n, img] of await IKONLAST) if (!map.hasImage(n)) map.addImage(n, img, { pixelRatio: 2 });
@@ -286,6 +343,8 @@ function leggTilLag() {
       'text-field': ['get', 'name'], 'text-size': 13, 'text-anchor': 'top', 'text-offset': [0, .2], 'text-optional': true,
       'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'] },
     paint: { 'text-color': '#fff', 'text-halo-color': '#2B211E', 'text-halo-width': 1.6 } });
+
+  brukFilter();   // hald på filteret frå teiknforklaringa ved byte av kartstil
 
   // Ved byte av kartstil: vis den valde turen att, ferdig teikna
   if (aktivTur) {
