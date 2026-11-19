@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192256"></script>
-<script src="ikon.js?v=202611192256"></script>
+<script src="data.js?v=202611192301"></script>
+<script src="ikon.js?v=202611192301"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -134,25 +134,30 @@
   #ingentoken div { max-width: 460px; background: #fff; padding: 24px; border-radius: 10px; font: 15px/1.5 var(--font); }
 
   .teikn details:not([open]) { width: auto; }
-  /* PC: Mapbox-logoen nede til venstre skal ikkje liggje under turpanelet */
-  @media (min-width: 701px) { .mapboxgl-ctrl-bottom-left { left: 384px; } }
+  /* Mobil og nettbrett (body.kollaps): kartet i fullskjerm, turpanelet kjem fram når ein trykkjer «Turar» */
+  body.kollaps #panel { display: none; }
+  body.kollaps.panel-ope #panel { display: flex; }   /* lukka panel tek ingen plass, så sida kan ikkje scrollast */
+  body.kollaps #turknapp {
+    display: block; position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 3;
+    font: 600 15px var(--font); padding: 11px 22px; border-radius: 24px; border: 0;
+    background: var(--ink); color: #fff; box-shadow: 0 3px 12px rgba(0,0,0,.3); cursor: pointer;
+  }
+  body.kollaps.panel-ope #turknapp { display: none; }
+  body.kollaps #lukkpanel {
+    display: flex; align-items: center; justify-content: center; position: absolute; top: 8px; right: 10px; z-index: 3;
+    width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: #fff;
+    color: var(--ink); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  }
+  body.kollaps #detalj .topp, body.kollaps #planlegg .topp { padding-right: 48px; }
+  body.kollaps header { padding-right: 52px; }
+  /* Breie skjermar: Mapbox-logoen nede til venstre skal ikkje liggje under turpanelet når det er ope */
+  @media (min-width: 701px) {
+    body:not(.kollaps) .mapboxgl-ctrl-bottom-left, body.kollaps.panel-ope .mapboxgl-ctrl-bottom-left { left: 384px; }
+  }
   @media (max-width: 700px) {
     /* Mobil: kartet i fullskjerm, turpanelet kjem opp frå botnen når ein trykkjer «Turar» */
-    #panel { display: none; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 50vh; height: 50dvh; border-radius: 14px 14px 0 0; }
-    body.panel-ope #panel { display: flex; }   /* lukka panel tek ingen plass, så sida kan ikkje scrollast */
-    #turknapp {
-      display: block; position: absolute; left: 50%; transform: translateX(-50%);
-      bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 3;
-      font: 600 15px var(--font); padding: 11px 22px; border-radius: 24px; border: 0;
-      background: var(--ink); color: #fff; box-shadow: 0 3px 12px rgba(0,0,0,.3); cursor: pointer;
-    }
-    body.panel-ope #turknapp { display: none; }
-    #lukkpanel {
-      display: flex; align-items: center; justify-content: center; position: absolute; top: 8px; right: 10px; z-index: 3;
-      width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: #fff;
-      color: var(--ink); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.12);
-    }
-    #detalj .topp, #planlegg .topp { padding-right: 48px; }
+    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 50vh; height: 50dvh; border-radius: 14px 14px 0 0; }
     header { padding: 10px 16px 8px; }
     header h1 { font-size: 16px; margin-bottom: 8px; }
     header p { display: none; }
@@ -264,6 +269,11 @@ const FARGE = { enkel: '#3F6A36', middels: '#C8761E', krevjande: '#A33A3A' };
 const $ = id => document.getElementById(id);
 const plassar = n => n == null || n === '' ? '' : ` (${n} ${Number(n) === 1 ? 'plass' : 'plassar'})`;
 const MOBIL = window.matchMedia('(max-width: 700px)').matches;
+// Telefon og nettbrett (berøringsskjerm utan mus): turpanelet er lukka ved oppstart
+const KOLLAPS = MOBIL || window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+if (KOLLAPS) document.body.classList.add('kollaps');
+const panelOpe = () => document.body.classList.contains('panel-ope');
+const venstrePad = (ekstra = 0) => (!KOLLAPS || panelOpe()) ? 400 + ekstra : 40;
 let planPunktData = { type: 'FeatureCollection', features: [] };
 
 if (!MAPBOX_TOKEN || MAPBOX_TOKEN.startsWith('LIM_INN')) {
@@ -275,7 +285,7 @@ mapboxgl.accessToken = MAPBOX_TOKEN;
 const map = new mapboxgl.Map({
   container: 'kart', style: STILAR[stilNo],
   bounds: [[6.155, 62.628], [6.282, 62.690]],
-  fitBoundsOptions: { padding: MOBIL ? { top: 50, bottom: 70, left: 10, right: 10 } : { top: 40, bottom: 40, left: 400, right: 40 } },
+  fitBoundsOptions: { padding: MOBIL ? { top: 50, bottom: 70, left: 10, right: 10 } : { top: 40, bottom: KOLLAPS ? 80 : 40, left: venstrePad(), right: 40 } },
   customAttribution: 'Kartdata: Kartverket',
   locale: { 'NavigationControl.ZoomIn': 'Zoom inn', 'NavigationControl.ZoomOut': 'Zoom ut' }
 });
@@ -525,7 +535,7 @@ function visAlleStiar() {
 function zoomØya() {
   const mobil = window.innerWidth <= 700;
   map.fitBounds([[6.155, 62.628], [6.282, 62.690]], { pitch: 0, bearing: 0, duration: 1500,
-    padding: mobil ? { top: 50, bottom: botnPad(20), left: 20, right: 20 } : { top: 40, bottom: 40, left: 400, right: 40 } });
+    padding: mobil ? { top: 50, bottom: botnPad(20), left: 20, right: 20 } : { top: 40, bottom: 40, left: venstrePad(), right: 40 } });
 }
 
 // Klikk på ein sti: vis kva turar som går der
@@ -580,7 +590,7 @@ function visTur(f) {
   map.setPaintProperty('stiar', 'line-opacity', .45);
   const b = f.geometry.coordinates.reduce((bb, c) => bb.extend(c), new mapboxgl.LngLatBounds(f.geometry.coordinates[0], f.geometry.coordinates[0]));
   const mobil = window.innerWidth <= 700;
-  map.fitBounds(b, { padding: mobil ? { top: 60, bottom: botnPad(), left: 30, right: 30 } : { top: 60, bottom: 60, left: 420, right: 60 },
+  map.fitBounds(b, { padding: mobil ? { top: 60, bottom: botnPad(), left: 30, right: 30 } : { top: 60, bottom: 60, left: venstrePad(20), right: 60 },
     pitch: 45, duration: 1500, maxZoom: 16 });
   map.once('moveend', () => animer(f));
 }
