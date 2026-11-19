@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192221"></script>
-<script src="ikon.js?v=202611192221"></script>
+<script src="data.js?v=202611192225"></script>
+<script src="ikon.js?v=202611192225"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -134,6 +134,8 @@
   #ingentoken div { max-width: 460px; background: #fff; padding: 24px; border-radius: 10px; font: 15px/1.5 var(--font); }
 
   .teikn details:not([open]) { width: auto; }
+  /* PC: Mapbox-logoen nede til venstre skal ikkje liggje under turpanelet */
+  @media (min-width: 701px) { .mapboxgl-ctrl-bottom-left { left: 384px; } }
   @media (max-width: 700px) {
     /* Mobil: kartet i fullskjerm, turpanelet kjem opp frå botnen når ein trykkjer «Turar» */
     #panel { display: none; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 50vh; height: 50dvh; border-radius: 14px 14px 0 0; }
