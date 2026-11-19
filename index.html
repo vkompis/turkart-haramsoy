@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js"></script>
-<script src="ikon.js"></script>
+<script src="data.js?v=202611192210"></script>
+<script src="ikon.js?v=202611192210"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -261,6 +261,7 @@ const FASILITET = { badeplass: 'Badeplass', teltplass: 'Teltplass', wc: 'Toalett
 const FARGE = { enkel: '#3F6A36', middels: '#C8761E', krevjande: '#A33A3A' };
 const $ = id => document.getElementById(id);
 const MOBIL = window.matchMedia('(max-width: 700px)').matches;
+let planPunktData = { type: 'FeatureCollection', features: [] };
 
 if (!MAPBOX_TOKEN || MAPBOX_TOKEN.startsWith('LIM_INN')) {
   $('ingentoken').style.display = 'flex';
@@ -576,7 +577,7 @@ function visTur(f) {
 // ───────────── Lag eigen tur ─────────────
 // Kortaste veg langs stinettet (Dijkstra). Fylkesvegen tel tre gonger så langt, så han berre blir brukt
 // når det ikkje finst anna. Lia er stengd i hekketida 1. mai til 31. juli.
-const NETT = D.nett, NODEPOS = {}, NABO = {};
+const NETT = D.nett || { kantar: [], stader: [] }, NODEPOS = {}, NABO = {};   // tom dersom data.js er gammal
 NETT.kantar.forEach(([a, b, , , , c], i) => {
   NODEPOS[a] = NODEPOS[a] || c[0]; NODEPOS[b] = NODEPOS[b] || c[c.length - 1];
   (NABO[a] = NABO[a] || []).push([i, b, false]); (NABO[b] = NABO[b] || []).push([i, a, true]);
@@ -651,6 +652,7 @@ $('p-leggtil').addEventListener('click', () => leggTilVia());
 $('p-rund').addEventListener('change', () => { $('p-mal-l').hidden = $('p-rund').checked; visPlanPunkt(); });
 $('p-start').addEventListener('change', visPlanPunkt);
 $('p-mal').addEventListener('change', visPlanPunkt);
+if (!NETT.stader.length) $('planknapp').style.display = 'none';
 $('planknapp').addEventListener('click', () => { aktivTur = null; stoppAnim(); nullstillRute(); visModus('plan'); visPlanPunkt(); });
 $('plan-tilbake').addEventListener('click', visAlleStiar);
 $('p-lag').addEventListener('click', lagEigenTur);
@@ -660,7 +662,6 @@ function planIdar() {
   const mal = $('p-rund').checked ? start : $('p-mal').value;
   return { start, via, mal };
 }
-let planPunktData = { type: 'FeatureCollection', features: [] };
 function settPlanPunkt(liste) {
   planPunktData = { type: 'FeatureCollection', features: liste.map(([id, nr]) =>
     ({ type: 'Feature', properties: { nr }, geometry: { type: 'Point', coordinates: NODEPOS[STAD[id].node] } })) };
