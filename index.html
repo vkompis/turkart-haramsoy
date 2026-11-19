@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192225"></script>
-<script src="ikon.js?v=202611192225"></script>
+<script src="data.js?v=202611192229"></script>
+<script src="ikon.js?v=202611192229"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -395,12 +395,12 @@ function leggTilLag() {
 
   // Heile stinettet, tjukkare der det er mykje brukt (utan kvit kant)
   map.addLayer({ id: 'stiar-kant', type: 'line', source: 'stiar',
-    filter: ['!=', ['get', 'type'], 'bilveg'],
+    filter: ['!', ['in', ['get', 'type'], ['literal', ['bilveg', 'fortau']]]],
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: { 'line-color': '#fff', 'line-opacity': 0,   // usynleg – berre eit breiare klikkområde
       'line-width': ['interpolate', ['linear'], ['zoom'], 12, ['+', 2.5, ['*', .6, ['get', 'pop']]], 16, ['+', 5, ['*', 1.2, ['get', 'pop']]]] } });
   map.addLayer({ id: 'stiar', type: 'line', source: 'stiar',
-    filter: ['all', ['!=', ['get', 'type'], 'bilveg'], ['==', ['get', 'forbod'], 0]],
+    filter: ['all', ['!', ['in', ['get', 'type'], ['literal', ['bilveg', 'fortau']]]], ['==', ['get', 'forbod'], 0]],
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: { 'line-color': '#E8762B',
       'line-width': ['interpolate', ['linear'], ['zoom'], 12, ['+', 1, ['*', .4, ['get', 'pop']]], 16, ['+', 2.5, ['*', .9, ['get', 'pop']]]] } });
@@ -599,7 +599,7 @@ function kortaste(fra, til) {
     for (const [i, n, snu] of NABO[u] || []) {
       const k = NETT.kantar[i];
       if (sperr && k[3]) continue;
-      const nd = du + k[2] * (k[4] ? 3 : 1);
+      const nd = du + k[2] * (k[4] === 1 ? 3 : 1);   // bilveg utan fortau tel tre gonger
       if (nd < (dist[n] ?? Infinity)) { dist[n] = nd; forrige[n] = [u, i, snu]; }
     }
   }
@@ -608,7 +608,7 @@ function kortaste(fra, til) {
   return steg;
 }
 function byggRute(nodar) {
-  const coords = [], pr = []; let d = 0, lia = 0, veg = false;
+  const coords = [], pr = []; let d = 0, lia = 0, veg = false, fortau = false;
   for (let j = 0; j < nodar.length - 1; j++) {
     const s = kortaste(nodar[j], nodar[j + 1]);
     if (!s) return null;
@@ -617,7 +617,8 @@ function byggRute(nodar) {
       let c = k[5], z = k[6];
       if (snu) { c = [...c].reverse(); z = [...z].reverse(); }
       if (k[3]) lia += k[2];
-      if (k[4]) veg = true;
+      if (k[4] === 1) veg = true;
+      if (k[4] === 2) fortau = true;
       coords.push(...(coords.length ? c.slice(1) : c));
       const st = k[2] / (z.length - 1);
       z.forEach((zz, t) => { if (!(pr.length && t === 0)) pr.push([Math.round(d + t * st), zz]); });
@@ -628,12 +629,12 @@ function byggRute(nodar) {
   let stig = 0;
   for (let t = 1; t < pr.length; t++) stig += Math.max(0, pr[t][1] - pr[t - 1][1]);
   let min = (d - lia) / 4000 * 60 + stig / 6 + (lia ? LIA_MIN * lia / 2006 : 0);
-  return { coords, pr, lengd: Math.round(d), stigning: Math.round(stig), tid: Math.max(5, Math.round(min / 5) * 5), lia: lia > 0, veg };
+  return { coords, pr, lengd: Math.round(d), stigning: Math.round(stig), tid: Math.max(5, Math.round(min / 5) * 5), lia: lia > 0, veg, fortau };
 }
 
 function fyllStader(sel, tekst) {
   sel.innerHTML = `<option value="">${tekst}</option>`;
-  for (const gruppe of ['Turmål', 'Startpunkt', 'Parkering']) {
+  for (const gruppe of ['Turmål', 'Andre stader', 'Parkering']) {
     const og = document.createElement('optgroup'); og.label = gruppe;
     NETT.stader.filter(s => s.gruppe === gruppe).sort((a, b) => a.namn.localeCompare(b.namn, 'nn'))
       .forEach(s => og.appendChild(new Option(s.namn, s.id)));
@@ -695,6 +696,7 @@ function lagEigenTur() {
   if (r.lia) merk.push('Ruta går gjennom Lia. Lia er ulendt med klatring på alle fire, berre for folk i god form. Ferdselsforbod 1. mai til 31. juli (Haramsøya vestside naturreservat).');
   else if (hekketid()) merk.push('Lia er stengd no (ferdselsforbod 1. mai til 31. juli), så ruta går utanom.');
   if (r.veg) merk.push('Delar av ruta går langs fylkesvegen.');
+  else if (r.fortau) merk.push('Delar av ruta går langs bilveg med fortau.');
   visTur({ type: 'Feature', geometry: { type: 'LineString', coordinates: r.coords },
     properties: { eigen: true, namn, lengd: r.lengd, stigning: r.stigning, tid: r.tid, popularitet: null,
       skildring: merk.join(' ') || null, parkering: null, profil: r.pr } });
