@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="nn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turkart Haramsøy</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
+<script src="data.js"></script>
+<script src="ikon.js"></script>
+<style>
+  :root {
+    --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
+    --orange: #E8762B; --enkel: #3F6A36; --middels: #C8761E; --krevjande: #A33A3A;
+    --sea: #CEE7F5;
+    --font: 'Century Gothic', CenturyGothic, 'URW Gothic', 'TeX Gyre Adventor', Poppins, 'Avenir Next', Avenir, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: var(--font); color: var(--ink); }
+  #kart { position: absolute; inset: 0; }
+
+  #panel {
+    position: absolute; top: 12px; left: 12px; bottom: 12px; width: 360px;
+    background: var(--paper); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.18);
+    display: flex; flex-direction: column; overflow: hidden; z-index: 2;
+  }
+  header { padding: 16px 18px 10px; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  header p { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
+  .filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter button {
+    font: 13px var(--font); border: 1px solid var(--line); background: #fff;
+    padding: 6px 12px; border-radius: 20px; cursor: pointer; color: var(--ink);
+  }
+  .filter button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  #liste { list-style: none; margin: 0; padding: 6px 0; overflow-y: auto; flex: 1; }
+  #liste li button {
+    display: grid; grid-template-columns: 14px 1fr; gap: 10px; align-items: start;
+    width: 100%; text-align: left; background: none; border: 0; padding: 9px 18px;
+    cursor: pointer; font: inherit; color: inherit;
+  }
+  #liste li button:hover, #liste li button[aria-current="true"] { background: #f1ece6; }
+  .prikk { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; }
+  .tnamn { font-size: 15px; line-height: 1.25; }
+  .tinfo { font: 12px var(--font); color: var(--muted); margin-top: 3px; }
+
+  #detalj { display: none; flex-direction: column; overflow-y: auto; flex: 1; }
+  #detalj.vis { display: flex; }
+  #detalj > * { flex-shrink: 0; }
+  #detalj .topp { padding: 14px 18px 4px; }
+  #tilbake {
+    font: 13px var(--font); background: none; border: 0; color: var(--muted);
+    cursor: pointer; padding: 0; margin-bottom: 8px;
+  }
+  #detalj h2 { margin: 0 0 6px; font-size: 19px; font-weight: 600; line-height: 1.25; }
+  .merke {
+    display: inline-block; font: 12px var(--font); color: #fff;
+    padding: 2px 8px; border-radius: 10px; margin-right: 4px; text-transform: capitalize;
+  }
+  .fakta { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); margin: 12px 18px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .fakta div { background: #fff; padding: 9px 12px; }
+  .fakta dt { font: 11px var(--font); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .fakta dd { margin: 2px 0 0; font-size: 18px; }
+  .skildring { margin: 0 18px 10px; font-size: 14px; line-height: 1.45; background: #fbeaea; border-left: 3px solid var(--krevjande); padding: 8px 10px; }
+  .profil { margin: 4px 18px 6px; }
+  .profil h3, .start h3 { font: 11px var(--font); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 0 0 4px; }
+  .profil svg { width: 100%; height: 110px; display: block; }
+  .start { margin: 8px 18px 14px; font-size: 14px; }
+  #spel {
+    margin: 4px 18px 18px; font: 14px var(--font); padding: 10px; border-radius: 8px;
+    border: 1px solid var(--ink); background: #fff; cursor: pointer; color: var(--ink);
+  }
+  .filter[hidden] { display: none; }
+  .stilbytar button { width: auto !important; padding: 0 10px; font: 12px var(--font); }
+  .stipopup { font: 13px var(--font); display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
+  .stipopup strong { margin-bottom: 4px; }
+  .stipopup button { display: flex; gap: 8px; align-items: center; text-align: left; background: none; border: 0; padding: 5px 2px; cursor: pointer; font: inherit; color: var(--ink); }
+  .stipopup button:hover { background: #f1ece6; }
+  .stipopup .prikk { flex: none; width: 10px; height: 10px; margin: 0; }
+  footer { font: 11px var(--font); color: var(--muted); padding: 8px 18px; border-top: 1px solid var(--line); }
+
+  #ingentoken { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: var(--sea); z-index: 5; padding: 24px; }
+  #ingentoken div { max-width: 460px; background: #fff; padding: 24px; border-radius: 10px; font: 15px/1.5 var(--font); }
+
+  @media (max-width: 700px) {
+    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 46vh; border-radius: 14px 14px 0 0; }
+    header { padding: 12px 16px 8px; }
+    header h1 { font-size: 19px; }
+    .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right { bottom: 46vh; }
+  }
+</style>
+</head>
+<body>
+<div id="kart" role="region" aria-label="Kart over Haramsøya"></div>
+
+<aside id="panel">
+  <header>
+    <h1>Turkart Haramsøy</h1>
+    <p>Haramsøy idrettslag · vel ein tur</p>
+    <div class="filter" id="filter" role="group" aria-label="Filtrer turar">
+      <button data-f="alle" aria-pressed="true">Alle</button>
+      <button data-f="fottur" aria-pressed="false">Fottur</button>
+      <button data-f="sykkel" aria-pressed="false">Sykkel</button>
+    </div>
+  </header>
+
+  <ul id="liste"></ul>
+
+  <section id="detalj" aria-live="polite">
+    <div class="topp">
+      <button id="tilbake">← Alle turar</button>
+      <h2 id="d-namn"></h2>
+      <div id="d-merke"></div>
+    </div>
+    <dl class="fakta">
+      <div><dt>Lengd</dt><dd id="d-lengd"></dd></div>
+      <div><dt>Stigning</dt><dd id="d-stigning"></dd></div>
+      <div><dt>Tid</dt><dd id="d-tid"></dd></div>
+      <div><dt>Bruk</dt><dd id="d-pop"></dd></div>
+    </dl>
+    <p class="skildring" id="d-skildring" hidden></p>
+    <div class="profil">
+      <h3>Høgdeprofil</h3>
+      <svg id="d-profil" viewBox="0 0 320 110" preserveAspectRatio="none" role="img" aria-label="Høgdeprofil for turen"></svg>
+    </div>
+    <div class="start" id="d-start" hidden><h3>Start</h3><span></span></div>
+    <button id="spel">▶ Spel av ruta igjen</button>
+  </section>
+
+  <footer>Kartdata: Kartverket, © OpenStreetMap-bidragsytarar, © Mapbox</footer>
+</aside>
+
+<div id="ingentoken"><div>
+  <strong>Kartet manglar Mapbox-token.</strong><br>
+  Opne <code>index.html</code> og lim inn tokenen din i linja <code>MAPBOX_TOKEN</code>.
+</div></div>
+
+<script>
+// ───────────── Innstillingar ─────────────
+const MAPBOX_TOKEN = 'pk.eyJ1IjoidmVnYXJkMTk5MCIsImEiOiJjbXdub3FncXQwMXc2MzBxdW5oMTRuZWpiIn0.KfRqveim6rPDc3AUxJqhbw';
+const STILAR = {
+  satellitt: 'mapbox://styles/mapbox/satellite-streets-v12',
+  kart: 'mapbox://styles/mapbox/outdoors-v12'
+};
+let stilNo = 'satellitt';
+const RUTEFARGE = '#FF5A1F';      // farge på den valde, animerte ruta
+const ANIMASJON_MS = 4000;        // kor lenge teikninga av ruta varer
+// ──────────────────────────────────────────
+
+const D = window.TURDATA;
+const IKONLAST = Promise.all(Object.entries(window.TURIKON || {}).map(([n, url]) => new Promise(ok => {
+  const img = new Image(); img.onload = () => ok([n, img]); img.onerror = () => ok(null); img.src = url;
+}))).then(a => a.filter(Boolean));
+const FASILITET = { badeplass: 'Badeplass', teltplass: 'Teltplass', wc: 'Toalett', butikk: 'Butikk', bobilparkering: 'Bobilparkering', vannsport: 'Vannsport' };
+const FARGE = { enkel: '#3F6A36', middels: '#C8761E', krevjande: '#A33A3A' };
+const $ = id => document.getElementById(id);
+
+if (!MAPBOX_TOKEN || MAPBOX_TOKEN.startsWith('LIM_INN')) {
+  $('ingentoken').style.display = 'flex';
+  throw new Error('Manglar Mapbox-token');
+}
+mapboxgl.accessToken = MAPBOX_TOKEN;
+
+const map = new mapboxgl.Map({
+  container: 'kart', style: STILAR[stilNo],
+  bounds: [[6.155, 62.628], [6.282, 62.690]],
+  fitBoundsOptions: { padding: { top: 40, bottom: 40, left: window.innerWidth > 700 ? 400 : 20, right: 40 } },
+  locale: { 'NavigationControl.ZoomIn': 'Zoom inn', 'NavigationControl.ZoomOut': 'Zoom ut' }
+});
+map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
+map.addControl(new mapboxgl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showUserHeading: true }), 'top-right');
+map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right');
+
+class StilBytar {
+  onAdd() {
+    this.el = document.createElement('div');
+    this.el.className = 'mapboxgl-ctrl mapboxgl-ctrl-group stilbytar';
+    this.b = document.createElement('button');
+    this.b.type = 'button';
+    this.oppdater();
+    this.b.addEventListener('click', () => {
+      stilNo = stilNo === 'satellitt' ? 'kart' : 'satellitt';
+      stoppAnim();
+      map.setStyle(STILAR[stilNo]);
+      this.oppdater();
+    });
+    this.el.appendChild(this.b);
+    return this.el;
+  }
+  oppdater() {
+    const tekst = stilNo === 'satellitt' ? 'Vis kart' : 'Vis satellitt';
+    this.b.textContent = tekst; this.b.setAttribute('aria-label', tekst);
+  }
+  onRemove() { this.el.remove(); }
+}
+map.addControl(new StilBytar(), 'top-right');
+
+class AlleStiar {
+  onAdd() {
+    this.el = document.createElement('div');
+    this.el.className = 'mapboxgl-ctrl mapboxgl-ctrl-group stilbytar';
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = 'Alle stiar'; b.setAttribute('aria-label', 'Vis alle stiar på heile øya');
+    b.addEventListener('click', () => { visAlleStiar(); zoomØya(); });
+    this.el.appendChild(b);
+    return this.el;
+  }
+  onRemove() { this.el.remove(); }
+}
+map.addControl(new AlleStiar(), 'top-right');
+
+map.on('style.load', async () => {
+  for (const [n, img] of await IKONLAST) if (!map.hasImage(n)) map.addImage(n, img, { pixelRatio: 2 });
+  leggTilLag();
+});
+map.once('load', () => {
+  for (const l of ['turmal', 'parkering', 'fasilitetar']) {
+    map.on('mouseenter', l, () => map.getCanvas().style.cursor = 'pointer');
+    map.on('mouseleave', l, () => map.getCanvas().style.cursor = '');
+  }
+  map.on('click', 'parkering', e => new mapboxgl.Popup({ offset: 12 })
+    .setLngLat(e.features[0].geometry.coordinates)
+    .setText('Parkering: ' + e.features[0].properties.name).addTo(map));
+  map.on('click', 'fasilitetar', e => {
+    const p = e.features[0].properties;
+    new mapboxgl.Popup({ offset: 14 }).setLngLat(e.features[0].geometry.coordinates)
+      .setText(p.name && p.name !== FASILITET[p.type] ? `${FASILITET[p.type]}: ${p.name}` : FASILITET[p.type]).addTo(map);
+  });
+  for (const l of ['stiar-kant']) {
+    map.on('mouseenter', l, () => map.getCanvas().style.cursor = 'pointer');
+    map.on('mouseleave', l, () => map.getCanvas().style.cursor = '');
+    map.on('click', l, e => stiPopup(e));
+  }
+  lesAdresse();
+});
+
+function leggTilLag() {
+  map.addSource('dem', { type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize: 512 });
+  map.setTerrain({ source: 'dem', exaggeration: 1.3 });
+
+  map.addSource('stiar', { type: 'geojson', data: D.stiar });
+  map.addSource('turar', { type: 'geojson', data: D.turar, promoteId: 'id' });
+  map.addSource('aktiv', { type: 'geojson', data: tomLinje() });
+  map.addSource('punkt', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addSource('turmal', { type: 'geojson', data: D.turmal });
+  map.addSource('parkering', { type: 'geojson', data: D.parkering });
+  map.addSource('fasilitetar', { type: 'geojson', data: D.fasilitetar || { type: 'FeatureCollection', features: [] } });
+
+  // Heile stinettet, tjukkare der det er mykje brukt (utan kvit kant)
+  map.addLayer({ id: 'stiar-kant', type: 'line', source: 'stiar',
+    filter: ['!=', ['get', 'type'], 'bilveg'],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#fff', 'line-opacity': 0,   // usynleg – berre eit breiare klikkområde
+      'line-width': ['interpolate', ['linear'], ['zoom'], 12, ['+', 2.5, ['*', .6, ['get', 'pop']]], 16, ['+', 5, ['*', 1.2, ['get', 'pop']]]] } });
+  map.addLayer({ id: 'stiar', type: 'line', source: 'stiar',
+    filter: ['all', ['!=', ['get', 'type'], 'bilveg'], ['==', ['get', 'forbod'], 0]],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#E8762B',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 12, ['+', 1, ['*', .4, ['get', 'pop']]], 16, ['+', 2.5, ['*', .9, ['get', 'pop']]]] } });
+  map.addLayer({ id: 'stiar-forbod', type: 'line', source: 'stiar',
+    filter: ['==', ['get', 'forbod'], 1],
+    paint: { 'line-color': '#C0392B', 'line-width': 2, 'line-dasharray': [2, 1.5] } });
+
+  // Valt tur: lys bakgrunn + animert linje
+  map.addLayer({ id: 'aktiv-kant', type: 'line', source: 'aktiv',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#fff', 'line-width': 9, 'line-opacity': .95 } });
+  map.addLayer({ id: 'aktiv', type: 'line', source: 'aktiv',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-width': 5, 'line-color': RUTEFARGE } });
+  map.addLayer({ id: 'punkt', type: 'circle', source: 'punkt',
+    paint: { 'circle-radius': 7, 'circle-color': '#2B211E', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2.5 } });
+
+  // Turmål, parkering og fasilitetar – same ikon som på plakaten
+  map.addLayer({ id: 'parkering', type: 'symbol', source: 'parkering',
+    layout: { 'icon-image': 'parkering', 'icon-size': ['interpolate', ['linear'], ['zoom'], 12, .7, 16, 1.1], 'icon-allow-overlap': true } });
+  map.addLayer({ id: 'fasilitetar', type: 'symbol', source: 'fasilitetar',
+    layout: { 'icon-image': ['get', 'type'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 12, .7, 16, 1.1], 'icon-allow-overlap': true } });
+  map.addLayer({ id: 'turmal', type: 'symbol', source: 'turmal',
+    layout: { 'icon-image': 'turmal', 'icon-anchor': 'bottom', 'icon-size': ['interpolate', ['linear'], ['zoom'], 12, .8, 16, 1.2],
+      'icon-allow-overlap': true,
+      'text-field': ['get', 'name'], 'text-size': 13, 'text-anchor': 'top', 'text-offset': [0, .2], 'text-optional': true,
+      'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'] },
+    paint: { 'text-color': '#fff', 'text-halo-color': '#2B211E', 'text-halo-width': 1.6 } });
+
+  // Ved byte av kartstil: vis den valde turen att, ferdig teikna
+  if (aktivTur) {
+    map.getSource('aktiv').setData(aktivTur);
+    map.setPaintProperty('stiar', 'line-opacity', .45);
+  }
+}
+
+// ───────────── Turliste ─────────────
+let filter = 'alle';
+function teiknListe() {
+  const ul = $('liste'); ul.innerHTML = '';
+  D.turar.features
+    .filter(f => filter === 'alle' || f.properties.aktivitet.includes(filter))
+    .sort((a, b) => a.properties.namn.localeCompare(b.properties.namn, 'nn'))
+    .forEach(f => {
+      const p = f.properties;
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.dataset.id = p.id;
+      b.innerHTML = `<span class="prikk" style="background:${FARGE[p.vanske]}" aria-hidden="true"></span>
+        <span><span class="tnamn"></span><span class="tinfo">${km(p.lengd)} · ${tid(p.tid)} · ${p.vanske}</span></span>`;
+      b.querySelector('.tnamn').textContent = p.namn;
+      b.addEventListener('click', () => velTur(p.id));
+      li.appendChild(b); ul.appendChild(li);
+    });
+}
+document.querySelectorAll('.filter button').forEach(b => b.addEventListener('click', () => {
+  filter = b.dataset.f;
+  document.querySelectorAll('.filter button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  teiknListe();
+}));
+$('tilbake').addEventListener('click', visAlleStiar);
+
+// Nullstill: inga valt tur, heile stinettet i full styrke
+function visAlleStiar() {
+  aktivTur = null;
+  $('detalj').classList.remove('vis'); $('liste').style.display = ''; $('filter').hidden = false;
+  stoppAnim();
+  if (map.getSource('aktiv')) {
+    map.getSource('aktiv').setData(tomLinje());
+    map.getSource('punkt').setData({ type: 'FeatureCollection', features: [] });
+    map.setPaintProperty('stiar', 'line-opacity', 1);
+  }
+  document.querySelectorAll('#liste button').forEach(x => x.removeAttribute('aria-current'));
+  history.replaceState(null, '', location.pathname);
+}
+function zoomØya() {
+  const mobil = window.innerWidth <= 700;
+  map.fitBounds([[6.155, 62.628], [6.282, 62.690]], { pitch: 0, bearing: 0, duration: 1500,
+    padding: mobil ? { top: 30, bottom: window.innerHeight * .46 + 20, left: 20, right: 20 } : { top: 40, bottom: 40, left: 400, right: 40 } });
+}
+
+// Klikk på ein sti: vis kva turar som går der
+function stiPopup(e) {
+  const p = e.features[0].properties;
+  const ids = String(p.turar || '').split(',').filter(Boolean).map(Number);
+  const div = document.createElement('div');
+  div.className = 'stipopup';
+  const h = document.createElement('strong');
+  h.textContent = ids.length ? 'Turar som går her' : 'Ingen merkte turar her';
+  div.appendChild(h);
+  ids.map(id => D.turar.features.find(f => f.properties.id === id)).filter(Boolean)
+    .sort((a, b) => a.properties.namn.localeCompare(b.properties.namn, 'nn'))
+    .forEach(f => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = `<span class="prikk" style="background:${FARGE[f.properties.vanske]}"></span>`;
+      b.append(f.properties.namn);
+      b.addEventListener('click', () => { popup.remove(); velTur(f.properties.id); });
+      div.appendChild(b);
+    });
+  const popup = new mapboxgl.Popup({ offset: 8, maxWidth: '280px' }).setLngLat(e.lngLat).setDOMContent(div).addTo(map);
+}
+$('spel').addEventListener('click', () => aktivTur && animer(aktivTur));
+
+// ───────────── Vel tur ─────────────
+let aktivTur = null;
+function velTur(id) {
+  const f = D.turar.features.find(x => x.properties.id === id);
+  if (!f) return;
+  aktivTur = f;
+  const p = f.properties;
+  $('liste').style.display = 'none'; $('filter').hidden = true; $('detalj').classList.add('vis');
+  $('d-namn').textContent = p.namn;
+  $('d-merke').innerHTML = `<span class="merke" style="background:${FARGE[p.vanske]}">${p.vanske}</span>`
+    + `<span class="merke" style="background:#6b625e">${p.aktivitet}</span>`;
+  $('d-lengd').textContent = km(p.lengd);
+  $('d-stigning').textContent = p.stigning + ' m';
+  $('d-tid').textContent = tid(p.tid);
+  $('d-pop').textContent = p.popularitet || '–';
+  const sk = $('d-skildring'); sk.hidden = !p.skildring; sk.textContent = p.skildring || '';
+  const st = $('d-start'); st.hidden = !p.parkering; st.querySelector('span').textContent = p.parkering ? 'Parkering: ' + p.parkering : '';
+  teiknProfil(p.profil);
+  map.setPaintProperty('stiar', 'line-opacity', .45);
+  const b = f.geometry.coordinates.reduce((bb, c) => bb.extend(c), new mapboxgl.LngLatBounds(f.geometry.coordinates[0], f.geometry.coordinates[0]));
+  const mobil = window.innerWidth <= 700;
+  map.fitBounds(b, { padding: mobil ? { top: 40, bottom: window.innerHeight * .46 + 30, left: 30, right: 30 } : { top: 60, bottom: 60, left: 420, right: 60 },
+    pitch: 45, duration: 1500, maxZoom: 16 });
+  map.once('moveend', () => animer(f));
+  history.replaceState(null, '', '#tur=' + id);
+  document.querySelectorAll('#liste button').forEach(x => x.setAttribute('aria-current', x.dataset.id == id));
+}
+
+// ───────────── Animasjon ─────────────
+let animId = null;
+function stoppAnim() { if (animId) cancelAnimationFrame(animId); animId = null; }
+function animer(f) {
+  stoppAnim();
+  const coords = f.geometry.coordinates;
+  // kumulativ distanse for jamn fart
+  const cum = [0];
+  for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + avstand(coords[i - 1], coords[i]));
+  const total = cum[cum.length - 1];
+  const t0 = performance.now();
+  const steg = now => {
+    const k = Math.min(1, (now - t0) / ANIMASJON_MS);
+    const e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;  // ease-in-out
+    const d = e * total;
+    let i = cum.findIndex(c => c >= d); if (i < 1) i = 1;
+    const r = (d - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1);
+    const pt = [coords[i - 1][0] + (coords[i][0] - coords[i - 1][0]) * r, coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * r];
+    const del = coords.slice(0, i).concat([pt]);
+    map.getSource('aktiv').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: del.length > 1 ? del : [pt, pt] } });
+    map.getSource('punkt').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: pt } });
+    markerProfil(d);
+    if (k < 1) animId = requestAnimationFrame(steg); else animId = null;
+  };
+  animId = requestAnimationFrame(steg);
+}
+
+// ───────────── Høgdeprofil ─────────────
+let profilSkala = null;
+function teiknProfil(pr) {
+  const svg = $('d-profil'), W = 320, H = 110, pl = 30, pb = 16, pt = 8;
+  const maxD = pr[pr.length - 1][0];
+  const zs = pr.map(p => p[1]); const zmin = Math.min(...zs), zmax = Math.max(...zs);
+  const lo = Math.floor(zmin / 50) * 50, hi = Math.max(lo + 50, Math.ceil(zmax / 50) * 50);
+  const x = d => pl + (d / maxD) * (W - pl - 4);
+  const y = z => pt + (1 - (z - lo) / (hi - lo)) * (H - pt - pb);
+  profilSkala = { x, y, pr, maxD };
+  const line = pr.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+  const area = line + ` L${x(maxD).toFixed(1)} ${H - pb} L${pl} ${H - pb} Z`;
+  svg.innerHTML = `
+    <line x1="${pl}" x2="${W - 4}" y1="${y(hi)}" y2="${y(hi)}" stroke="#e4e0db"/>
+    <line x1="${pl}" x2="${W - 4}" y1="${y(lo)}" y2="${y(lo)}" stroke="#e4e0db"/>
+    <text x="${pl - 4}" y="${y(hi) + 4}" font-size="10" text-anchor="end" fill="#6b625e" font-family="Century Gothic, Poppins, sans-serif">${hi}</text>
+    <text x="${pl - 4}" y="${y(lo) + 4}" font-size="10" text-anchor="end" fill="#6b625e" font-family="Century Gothic, Poppins, sans-serif">${lo}</text>
+    <text x="${W - 4}" y="${H - 3}" font-size="10" text-anchor="end" fill="#6b625e" font-family="Century Gothic, Poppins, sans-serif">${km(maxD)}</text>
+    <text x="${pl}" y="${H - 3}" font-size="10" fill="#6b625e" font-family="Century Gothic, Poppins, sans-serif">0</text>
+    <path d="${area}" fill="#E8762B" fill-opacity=".18"/>
+    <path d="${line}" fill="none" stroke="#E8762B" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+    <circle id="p-punkt" r="3.5" fill="#2B211E" stroke="#fff" stroke-width="1.5" cx="${x(0)}" cy="${y(pr[0][1])}"/>`;
+}
+function markerProfil(d) {
+  if (!profilSkala) return;
+  const { x, y, pr, maxD } = profilSkala;
+  const dd = Math.min(d, maxD);
+  let i = pr.findIndex(p => p[0] >= dd); if (i < 1) i = 1;
+  const r = (dd - pr[i - 1][0]) / ((pr[i][0] - pr[i - 1][0]) || 1);
+  const z = pr[i - 1][1] + (pr[i][1] - pr[i - 1][1]) * r;
+  const c = document.getElementById('p-punkt');
+  if (c) { c.setAttribute('cx', x(dd)); c.setAttribute('cy', y(z)); }
+}
+
+// ───────────── Hjelparar ─────────────
+function tomLinje() { return { type: 'FeatureCollection', features: [] }; }
+function km(m) { return m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m) + ' m'; }
+function tid(min) { return min >= 60 ? Math.floor(min / 60) + ' t ' + (min % 60 ? (min % 60) + ' min' : '') : min + ' min'; }
+function avstand(a, b) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+function lesAdresse() {
+  const m = location.hash.match(/tur=(\d+)/);
+  if (m) velTur(Number(m[1]));
+}
+
+teiknListe();
+</script>
+</body>
+</html>
