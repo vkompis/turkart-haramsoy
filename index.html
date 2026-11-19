@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192212"></script>
-<script src="ikon.js?v=202611192212"></script>
+<script src="data.js?v=202611192214"></script>
+<script src="ikon.js?v=202611192214"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -93,7 +93,7 @@
   .planskjema select { font: 15px var(--font); padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); width: 100%; }
   .viarad { display: flex; gap: 6px; align-items: end; }
   .viarad label { flex: 1; }
-  .viarad button { font: 16px var(--font); border: 1px solid var(--line); background: #fff; border-radius: 8px; width: 38px; height: 38px; cursor: pointer; color: var(--muted); }
+  .viarad button { display: flex; align-items: center; justify-content: center; font: 16px var(--font); border: 1px solid var(--line); background: #fff; border-radius: 8px; width: 38px; height: 38px; cursor: pointer; color: var(--muted); }
   .lenkjeknapp { align-self: flex-start; font: 14px var(--font); background: none; border: 0; padding: 2px 0; color: var(--ink); cursor: pointer; text-decoration: underline; }
   .hovudknapp { font: 15px var(--font); padding: 11px; border-radius: 8px; border: 0; background: var(--ink); color: #fff; cursor: pointer; margin-top: 4px; }
   .melding { margin: 0; font-size: 13px; color: var(--krevjande); }
@@ -146,8 +146,9 @@
     }
     body.panel-ope #turknapp { display: none; }
     #lukkpanel {
-      display: block; position: absolute; top: 6px; right: 8px; z-index: 3; width: 36px; height: 36px;
-      border: 0; background: none; font: 18px var(--font); color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; position: absolute; top: 8px; right: 10px; z-index: 3;
+      width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: #fff;
+      color: var(--ink); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.12);
     }
     #detalj .topp, #planlegg .topp { padding-right: 48px; }
     header { padding: 10px 16px 8px; }
@@ -185,9 +186,9 @@
       <button data-f="fottur" aria-pressed="false">Fottur</button>
       <button data-f="sykkel" aria-pressed="false">Sykkel</button>
     </div>
-    <button id="planknapp" class="planknapp" type="button">＋ Lag eigen tur</button>
+    <button id="planknapp" class="planknapp" type="button">Lag eigen tur</button>
   </header>
-  <button id="lukkpanel" type="button" aria-label="Skjul turpanelet">✕</button>
+  <button id="lukkpanel" type="button" aria-label="Skjul turpanelet"><svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
 
   <ul id="liste"></ul>
 
@@ -200,7 +201,7 @@
     <div class="planskjema">
       <label>Start<select id="p-start"></select></label>
       <div id="p-via"></div>
-      <button id="p-leggtil" class="lenkjeknapp" type="button">＋ Legg til viapunkt</button>
+      <button id="p-leggtil" class="lenkjeknapp" type="button">Legg til viapunkt</button>
       <label class="rund"><input type="checkbox" id="p-rund"> Rundtur (tilbake til start)</label>
       <label id="p-mal-l">Mål<select id="p-mal"></select></label>
       <p id="p-melding" class="melding" hidden></p>
@@ -227,13 +228,13 @@
       <svg id="d-profil" viewBox="0 0 320 110" preserveAspectRatio="none" role="img" aria-label="Høgdeprofil for turen"></svg>
     </div>
     <div class="start" id="d-start" hidden><h3>Start</h3><span></span></div>
-    <button id="spel">▶ Spel av ruta igjen</button>
+    <button id="spel">Spel av ruta igjen</button>
   </section>
 
   <footer>Kartdata: Kartverket, © OpenStreetMap-bidragsytarar, © Mapbox</footer>
 </aside>
 
-<button id="turknapp" type="button" aria-label="Vis turar">☰ Turar</button>
+<button id="turknapp" type="button" aria-label="Vis turar">Turar</button>
 
 <div id="ingentoken"><div>
   <strong>Kartet manglar Mapbox-token.</strong><br>
@@ -642,7 +643,7 @@ function leggTilVia(verdi = '') {
   const l = document.createElement('label'); l.textContent = 'Via';
   const s = document.createElement('select'); fyllStader(s, 'Vel stad …'); s.value = verdi;
   l.appendChild(s);
-  const x = document.createElement('button'); x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', 'Fjern viapunkt');
+  const x = document.createElement('button'); x.type = 'button'; x.innerHTML = '<svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'; x.setAttribute('aria-label', 'Fjern viapunkt');
   x.addEventListener('click', () => { rad.remove(); visPlanPunkt(); });
   s.addEventListener('change', visPlanPunkt);
   rad.append(l, x); $('p-via').appendChild(rad);
