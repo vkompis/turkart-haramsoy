@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192229"></script>
-<script src="ikon.js?v=202611192229"></script>
+<script src="data.js?v=202611192232"></script>
+<script src="ikon.js?v=202611192232"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -262,6 +262,7 @@ const IKONLAST = Promise.all(Object.entries(window.TURIKON || {}).map(([n, url])
 const FASILITET = { badeplass: 'Badeplass', teltplass: 'Teltplass', wc: 'Toalett', butikk: 'Butikk', bobilparkering: 'Bobilparkering', vannsport: 'Vannsport' };
 const FARGE = { enkel: '#3F6A36', middels: '#C8761E', krevjande: '#A33A3A' };
 const $ = id => document.getElementById(id);
+const plassar = n => n == null || n === '' ? '' : ` (${n} ${Number(n) === 1 ? 'plass' : 'plassar'})`;
 const MOBIL = window.matchMedia('(max-width: 700px)').matches;
 let planPunktData = { type: 'FeatureCollection', features: [] };
 
@@ -367,11 +368,11 @@ map.once('load', () => {
   }
   map.on('click', 'parkering', e => new mapboxgl.Popup({ offset: 12 })
     .setLngLat(e.features[0].geometry.coordinates)
-    .setText('Parkering: ' + e.features[0].properties.name).addTo(map));
+    .setText('Parkering: ' + e.features[0].properties.name + plassar(e.features[0].properties.capacity)).addTo(map));
   map.on('click', 'fasilitetar', e => {
     const p = e.features[0].properties;
     new mapboxgl.Popup({ offset: 14 }).setLngLat(e.features[0].geometry.coordinates)
-      .setText(p.name && p.name !== FASILITET[p.type] ? `${FASILITET[p.type]}: ${p.name}` : FASILITET[p.type]).addTo(map);
+      .setText((p.name && p.name !== FASILITET[p.type] ? `${FASILITET[p.type]}: ${p.name}` : FASILITET[p.type]) + plassar(p.capacity)).addTo(map);
   });
   for (const l of ['stiar-kant']) {
     map.on('mouseenter', l, () => map.getCanvas().style.cursor = 'pointer');
@@ -567,7 +568,7 @@ function visTur(f) {
   $('d-pop').textContent = p.popularitet || '–';
   const sk = $('d-skildring'); sk.hidden = !p.skildring; sk.textContent = p.skildring || '';
   const st = $('d-start'); st.hidden = !(p.parkering || p.startpunkt);
-  st.querySelector('span').textContent = p.parkering ? 'Parkering: ' + p.parkering : (p.startpunkt || '');
+  st.querySelector('span').textContent = p.parkering ? 'Parkering: ' + p.parkering + plassar(p.plassar) : (p.startpunkt || '');
   teiknProfil(p.profil);
   map.setPaintProperty('stiar', 'line-opacity', .45);
   const b = f.geometry.coordinates.reduce((bb, c) => bb.extend(c), new mapboxgl.LngLatBounds(f.geometry.coordinates[0], f.geometry.coordinates[0]));
