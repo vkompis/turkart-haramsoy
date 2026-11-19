@@ -75,6 +75,31 @@
     border: 1px solid var(--ink); background: #fff; cursor: pointer; color: var(--ink);
   }
   .filter[hidden] { display: none; }
+  .planknapp {
+    margin-top: 10px; width: 100%; font: 14px var(--font); padding: 8px 12px; border-radius: 8px;
+    border: 1px dashed var(--ink); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .planknapp[hidden] { display: none; }
+  #planlegg { overflow-y: auto; flex: 1; }
+  #planlegg[hidden] { display: none; }
+  #planlegg .topp { padding: 14px 18px 4px; }
+  #planlegg h2 { margin: 0 0 4px; font-size: 19px; font-weight: 600; }
+  .tilbakeknapp { font: 13px var(--font); background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0; margin-bottom: 8px; }
+  .hjelp { margin: 0 0 6px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .hjelp.liten { font-size: 11px; margin-top: 10px; }
+  .planskjema { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .planskjema label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .planskjema label.rund { flex-direction: row; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--ink); }
+  .planskjema select { font: 15px var(--font); padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); width: 100%; }
+  .viarad { display: flex; gap: 6px; align-items: end; }
+  .viarad label { flex: 1; }
+  .viarad button { font: 16px var(--font); border: 1px solid var(--line); background: #fff; border-radius: 8px; width: 38px; height: 38px; cursor: pointer; color: var(--muted); }
+  .lenkjeknapp { align-self: flex-start; font: 14px var(--font); background: none; border: 0; padding: 2px 0; color: var(--ink); cursor: pointer; text-decoration: underline; }
+  .hovudknapp { font: 15px var(--font); padding: 11px; border-radius: 8px; border: 0; background: var(--ink); color: #fff; cursor: pointer; margin-top: 4px; }
+  .melding { margin: 0; font-size: 13px; color: var(--krevjande); }
+  .melding[hidden] { display: none; }
+  #turknapp, #lukkpanel { display: none; }
+  .teikn summary { position: sticky; top: 0; background: #fff; z-index: 1; }
   .stilval { display: flex; }
   .mapboxgl-ctrl-group.stilval button + button { border-top: 0; border-left: 1px solid #ddd; }
   .stilval button[aria-pressed="true"] { background: var(--ink); color: #fff; }
@@ -94,7 +119,7 @@
   .teikn .tf-liste button[aria-pressed="false"] { opacity: .35; }
   .teikn .tf-liste button[aria-pressed="false"] span { text-decoration: line-through; }
   .teikn .tf-linjer { border-top: 1px solid var(--line); padding: 6px 10px 8px; color: var(--muted); font-size: 12px; }
-  .teikn .tf-linjer li { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+  .teikn .tf-linjer li { display: flex; align-items: center; gap: 8px; margin: 5px 0; line-height: 1.3; }
   .tf-sti { flex: none; width: 22px; height: 4px; border-radius: 2px; background: #E8762B; }
   .tf-forbod { flex: none; width: 22px; height: 0; border-top: 2px dashed #C0392B; }
   .stilbytar button { width: auto !important; padding: 0 10px; font: 12px var(--font); }
@@ -110,7 +135,22 @@
 
   .teikn details:not([open]) { width: auto; }
   @media (max-width: 700px) {
-    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 46vh; border-radius: 14px 14px 0 0; }
+    /* Mobil: kartet i fullskjerm, turpanelet kjem opp frå botnen når ein trykkjer «Turar» */
+    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 50vh; height: 50dvh; border-radius: 14px 14px 0 0;
+      transform: translateY(105%); transition: transform .25s ease; visibility: hidden; }
+    body.panel-ope #panel { transform: none; visibility: visible; }
+    #turknapp {
+      display: block; position: absolute; left: 50%; transform: translateX(-50%);
+      bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 3;
+      font: 600 15px var(--font); padding: 11px 22px; border-radius: 24px; border: 0;
+      background: var(--ink); color: #fff; box-shadow: 0 3px 12px rgba(0,0,0,.3); cursor: pointer;
+    }
+    body.panel-ope #turknapp { display: none; }
+    #lukkpanel {
+      display: block; position: absolute; top: 6px; right: 8px; z-index: 3; width: 36px; height: 36px;
+      border: 0; background: none; font: 18px var(--font); color: var(--muted); cursor: pointer;
+    }
+    #detalj .topp, #planlegg .topp { padding-right: 48px; }
     header { padding: 10px 16px 8px; }
     header h1 { font-size: 16px; margin-bottom: 8px; }
     header p { display: none; }
@@ -126,10 +166,11 @@
     .fakta dt { font-size: 10px; }
     .fakta dd { font-size: 14px; }
     .skildring, .profil, .start, #spel { margin-left: 16px; margin-right: 16px; }
-    .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right { bottom: 46vh; }
+    body.panel-ope .mapboxgl-ctrl-bottom-left, body.panel-ope .mapboxgl-ctrl-bottom-right { bottom: 50vh; bottom: 50dvh; }
     .mapboxgl-ctrl-top-left .mapboxgl-ctrl { clear: none; }   /* Kart/Satellitt og Alle stiar på same rad */
     .teikn { width: auto; }
-    .teikn details[open] { width: 215px; max-height: calc(54vh - 135px); overflow-y: auto; }
+    .teikn details[open] { width: 215px; max-height: calc(100vh - 230px); max-height: calc(100dvh - 230px); overflow-y: auto; }
+    body.panel-ope .teikn details[open] { max-height: calc(50vh - 120px); max-height: calc(50dvh - 120px); }
   }
 </style>
 </head>
@@ -145,9 +186,29 @@
       <button data-f="fottur" aria-pressed="false">Fottur</button>
       <button data-f="sykkel" aria-pressed="false">Sykkel</button>
     </div>
+    <button id="planknapp" class="planknapp" type="button">＋ Lag eigen tur</button>
   </header>
+  <button id="lukkpanel" type="button" aria-label="Skjul turpanelet">✕</button>
 
   <ul id="liste"></ul>
+
+  <section id="planlegg" hidden>
+    <div class="topp">
+      <button class="tilbakeknapp" id="plan-tilbake" type="button">← Alle turar</button>
+      <h2>Lag eigen tur</h2>
+      <p class="hjelp">Vel start og mål, og legg gjerne til stader du vil innom. Kartet finn kortaste veg langs stiane.</p>
+    </div>
+    <div class="planskjema">
+      <label>Start<select id="p-start"></select></label>
+      <div id="p-via"></div>
+      <button id="p-leggtil" class="lenkjeknapp" type="button">＋ Legg til viapunkt</button>
+      <label class="rund"><input type="checkbox" id="p-rund"> Rundtur (tilbake til start)</label>
+      <label id="p-mal-l">Mål<select id="p-mal"></select></label>
+      <p id="p-melding" class="melding" hidden></p>
+      <button id="p-lag" class="hovudknapp" type="button">Lag tur</button>
+      <p class="hjelp liten">Tida er rekna med 4 km/t og 10 min ekstra per 100 høgdemeter. Lia får eiga tid fordi ho er så ulendt.</p>
+    </div>
+  </section>
 
   <section id="detalj" aria-live="polite">
     <div class="topp">
@@ -172,6 +233,8 @@
 
   <footer>Kartdata: Kartverket, © OpenStreetMap-bidragsytarar, © Mapbox</footer>
 </aside>
+
+<button id="turknapp" type="button" aria-label="Vis turar">☰ Turar</button>
 
 <div id="ingentoken"><div>
   <strong>Kartet manglar Mapbox-token.</strong><br>
@@ -208,7 +271,7 @@ mapboxgl.accessToken = MAPBOX_TOKEN;
 const map = new mapboxgl.Map({
   container: 'kart', style: STILAR[stilNo],
   bounds: [[6.155, 62.628], [6.282, 62.690]],
-  fitBoundsOptions: { padding: MOBIL ? { top: 50, bottom: window.innerHeight * .46 + 10, left: 10, right: 10 } : { top: 40, bottom: 40, left: 400, right: 40 } },
+  fitBoundsOptions: { padding: MOBIL ? { top: 50, bottom: 70, left: 10, right: 10 } : { top: 40, bottom: 40, left: 400, right: 40 } },
   customAttribution: 'Kartdata: Kartverket',
   locale: { 'NavigationControl.ZoomIn': 'Zoom inn', 'NavigationControl.ZoomOut': 'Zoom ut' }
 });
@@ -366,6 +429,14 @@ function leggTilLag() {
 
   brukFilter();   // hald på filteret frå teiknforklaringa ved byte av kartstil
 
+  // Punkta i «Lag eigen tur» (S = start, 1, 2 … = via, M = mål)
+  map.addSource('planpunkt', { type: 'geojson', data: planPunktData });
+  map.addLayer({ id: 'planpunkt', type: 'circle', source: 'planpunkt',
+    paint: { 'circle-radius': 10, 'circle-color': '#2B211E', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+  map.addLayer({ id: 'planpunkt-tekst', type: 'symbol', source: 'planpunkt',
+    layout: { 'text-field': ['get', 'nr'], 'text-size': 11, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'], 'text-allow-overlap': true },
+    paint: { 'text-color': '#fff' } });
+
   // Ved byte av kartstil: vis den valde turen att, ferdig teikna
   if (aktivTur) {
     map.getSource('aktiv').setData(aktivTur);
@@ -397,12 +468,40 @@ document.querySelectorAll('.filter button').forEach(b => b.addEventListener('cli
   document.querySelectorAll('.filter button').forEach(x => x.setAttribute('aria-pressed', x === b));
   teiknListe();
 }));
-$('tilbake').addEventListener('click', visAlleStiar);
+$('tilbake').addEventListener('click', () => {
+  if (aktivTur && aktivTur.properties.eigen) { aktivTur = null; stoppAnim(); nullstillRute(); visModus('plan'); history.replaceState(null, '', location.pathname); }
+  else visAlleStiar();
+});
+function nullstillRute() {
+  if (!map.getSource('aktiv')) return;
+  map.getSource('aktiv').setData(tomLinje());
+  map.getSource('punkt').setData({ type: 'FeatureCollection', features: [] });
+  map.setPaintProperty('stiar', 'line-opacity', 1);
+}
 
 // Nullstill: inga valt tur, heile stinettet i full styrke
+function visModus(m) {             // 'liste', 'detalj' eller 'plan'
+  $('liste').style.display = m === 'liste' ? '' : 'none';
+  $('filter').hidden = m !== 'liste'; $('planknapp').hidden = m !== 'liste';
+  $('detalj').classList.toggle('vis', m === 'detalj');
+  $('planlegg').hidden = m !== 'plan';
+  $('panel').classList.toggle('detaljmodus', m !== 'liste');
+}
+function opnePanel(ja) {
+  document.body.classList.toggle('panel-ope', ja);
+  if (ja && MOBIL) { const d = document.querySelector('.teikn details'); if (d) d.open = false; }
+}
+function botnPad(ekstra = 30) {
+  if (!MOBIL) return 60;
+  return document.body.classList.contains('panel-ope') ? window.innerHeight * .5 + ekstra : 80;
+}
+$('turknapp').addEventListener('click', () => opnePanel(true));
+$('lukkpanel').addEventListener('click', () => opnePanel(false));
+
 function visAlleStiar() {
   aktivTur = null;
-  $('detalj').classList.remove('vis'); $('panel').classList.remove('detaljmodus'); $('liste').style.display = ''; $('filter').hidden = false;
+  visModus('liste');
+  settPlanPunkt([]);
   stoppAnim();
   if (map.getSource('aktiv')) {
     map.getSource('aktiv').setData(tomLinje());
@@ -415,7 +514,7 @@ function visAlleStiar() {
 function zoomØya() {
   const mobil = window.innerWidth <= 700;
   map.fitBounds([[6.155, 62.628], [6.282, 62.690]], { pitch: 0, bearing: 0, duration: 1500,
-    padding: mobil ? { top: 50, bottom: window.innerHeight * .46 + 20, left: 20, right: 20 } : { top: 40, bottom: 40, left: 400, right: 40 } });
+    padding: mobil ? { top: 50, bottom: botnPad(20), left: 20, right: 20 } : { top: 40, bottom: 40, left: 400, right: 40 } });
 }
 
 // Klikk på ein sti: vis kva turar som går der
@@ -446,11 +545,18 @@ let aktivTur = null;
 function velTur(id) {
   const f = D.turar.features.find(x => x.properties.id === id);
   if (!f) return;
+  settPlanPunkt([]);
+  visTur(f);
+  history.replaceState(null, '', '#tur=' + id);
+  document.querySelectorAll('#liste button').forEach(x => x.setAttribute('aria-current', x.dataset.id == id));
+}
+function visTur(f) {
   aktivTur = f;
   const p = f.properties;
-  $('liste').style.display = 'none'; $('filter').hidden = true; $('detalj').classList.add('vis'); $('panel').classList.add('detaljmodus');
+  visModus('detalj'); opnePanel(true);
   $('d-namn').textContent = p.namn;
-  $('d-merke').innerHTML = `<span class="merke" style="background:${FARGE[p.vanske]}">${p.vanske}</span>`
+  $('d-merke').innerHTML = p.eigen ? `<span class="merke" style="background:#6b625e">eigen tur</span>`
+    : `<span class="merke" style="background:${FARGE[p.vanske]}">${p.vanske}</span>`
     + `<span class="merke" style="background:#6b625e">${p.aktivitet}</span>`;
   $('d-lengd').textContent = km(p.lengd);
   $('d-stigning').textContent = p.stigning + ' m';
@@ -462,11 +568,133 @@ function velTur(id) {
   map.setPaintProperty('stiar', 'line-opacity', .45);
   const b = f.geometry.coordinates.reduce((bb, c) => bb.extend(c), new mapboxgl.LngLatBounds(f.geometry.coordinates[0], f.geometry.coordinates[0]));
   const mobil = window.innerWidth <= 700;
-  map.fitBounds(b, { padding: mobil ? { top: 60, bottom: window.innerHeight * .46 + 30, left: 30, right: 30 } : { top: 60, bottom: 60, left: 420, right: 60 },
+  map.fitBounds(b, { padding: mobil ? { top: 60, bottom: botnPad(), left: 30, right: 30 } : { top: 60, bottom: 60, left: 420, right: 60 },
     pitch: 45, duration: 1500, maxZoom: 16 });
   map.once('moveend', () => animer(f));
-  history.replaceState(null, '', '#tur=' + id);
-  document.querySelectorAll('#liste button').forEach(x => x.setAttribute('aria-current', x.dataset.id == id));
+}
+
+// ───────────── Lag eigen tur ─────────────
+// Kortaste veg langs stinettet (Dijkstra). Fylkesvegen tel tre gonger så langt, så han berre blir brukt
+// når det ikkje finst anna. Lia er stengd i hekketida 1. mai til 31. juli.
+const NETT = D.nett, NODEPOS = {}, NABO = {};
+NETT.kantar.forEach(([a, b, , , , c], i) => {
+  NODEPOS[a] = NODEPOS[a] || c[0]; NODEPOS[b] = NODEPOS[b] || c[c.length - 1];
+  (NABO[a] = NABO[a] || []).push([i, b, false]); (NABO[b] = NABO[b] || []).push([i, a, true]);
+});
+const STAD = Object.fromEntries(NETT.stader.map(s => [s.id, s]));
+const LIA_MIN = 165;                       // Lia åleine: 2½–3 timar
+function hekketid(d = new Date()) { const m = d.getMonth() + 1; return m >= 5 && m <= 7; }
+function kortaste(fra, til) {
+  const sperr = hekketid(), dist = { [fra]: 0 }, forrige = {}, ferdig = new Set();
+  for (;;) {
+    let u = null, du = Infinity;
+    for (const n in dist) if (!ferdig.has(n) && dist[n] < du) { du = dist[n]; u = n; }
+    if (u === null) return null;
+    if (u == til) break;
+    ferdig.add(u);
+    for (const [i, n, snu] of NABO[u] || []) {
+      const k = NETT.kantar[i];
+      if (sperr && k[3]) continue;
+      const nd = du + k[2] * (k[4] ? 3 : 1);
+      if (nd < (dist[n] ?? Infinity)) { dist[n] = nd; forrige[n] = [u, i, snu]; }
+    }
+  }
+  const steg = []; let n = String(til);
+  while (n != fra) { const [u, i, snu] = forrige[n]; steg.unshift([i, snu]); n = String(u); }
+  return steg;
+}
+function byggRute(nodar) {
+  const coords = [], pr = []; let d = 0, lia = 0, veg = false;
+  for (let j = 0; j < nodar.length - 1; j++) {
+    const s = kortaste(nodar[j], nodar[j + 1]);
+    if (!s) return null;
+    for (const [i, snu] of s) {
+      const k = NETT.kantar[i];
+      let c = k[5], z = k[6];
+      if (snu) { c = [...c].reverse(); z = [...z].reverse(); }
+      if (k[3]) lia += k[2];
+      if (k[4]) veg = true;
+      coords.push(...(coords.length ? c.slice(1) : c));
+      const st = k[2] / (z.length - 1);
+      z.forEach((zz, t) => { if (!(pr.length && t === 0)) pr.push([Math.round(d + t * st), zz]); });
+      d += k[2];
+    }
+  }
+  if (coords.length < 2) return null;
+  let stig = 0;
+  for (let t = 1; t < pr.length; t++) stig += Math.max(0, pr[t][1] - pr[t - 1][1]);
+  let min = (d - lia) / 4000 * 60 + stig / 6 + (lia ? LIA_MIN * lia / 2006 : 0);
+  return { coords, pr, lengd: Math.round(d), stigning: Math.round(stig), tid: Math.max(5, Math.round(min / 5) * 5), lia: lia > 0, veg };
+}
+
+function fyllStader(sel, tekst) {
+  sel.innerHTML = `<option value="">${tekst}</option>`;
+  for (const gruppe of ['Turmål', 'Parkering']) {
+    const og = document.createElement('optgroup'); og.label = gruppe;
+    NETT.stader.filter(s => s.gruppe === gruppe).sort((a, b) => a.namn.localeCompare(b.namn, 'nn'))
+      .forEach(s => og.appendChild(new Option(s.namn, s.id)));
+    sel.appendChild(og);
+  }
+}
+fyllStader($('p-start'), 'Vel start …'); fyllStader($('p-mal'), 'Vel mål …');
+function leggTilVia(verdi = '') {
+  const rad = document.createElement('div'); rad.className = 'viarad';
+  const l = document.createElement('label'); l.textContent = 'Via';
+  const s = document.createElement('select'); fyllStader(s, 'Vel stad …'); s.value = verdi;
+  l.appendChild(s);
+  const x = document.createElement('button'); x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', 'Fjern viapunkt');
+  x.addEventListener('click', () => { rad.remove(); visPlanPunkt(); });
+  s.addEventListener('change', visPlanPunkt);
+  rad.append(l, x); $('p-via').appendChild(rad);
+}
+$('p-leggtil').addEventListener('click', () => leggTilVia());
+$('p-rund').addEventListener('change', () => { $('p-mal-l').hidden = $('p-rund').checked; visPlanPunkt(); });
+$('p-start').addEventListener('change', visPlanPunkt);
+$('p-mal').addEventListener('change', visPlanPunkt);
+$('planknapp').addEventListener('click', () => { aktivTur = null; stoppAnim(); nullstillRute(); visModus('plan'); visPlanPunkt(); });
+$('plan-tilbake').addEventListener('click', visAlleStiar);
+$('p-lag').addEventListener('click', lagEigenTur);
+
+function planIdar() {
+  const start = $('p-start').value, via = [...$('p-via').querySelectorAll('select')].map(s => s.value).filter(Boolean);
+  const mal = $('p-rund').checked ? start : $('p-mal').value;
+  return { start, via, mal };
+}
+let planPunktData = { type: 'FeatureCollection', features: [] };
+function settPlanPunkt(liste) {
+  planPunktData = { type: 'FeatureCollection', features: liste.map(([id, nr]) =>
+    ({ type: 'Feature', properties: { nr }, geometry: { type: 'Point', coordinates: NODEPOS[STAD[id].node] } })) };
+  if (map.getSource('planpunkt')) map.getSource('planpunkt').setData(planPunktData);
+}
+function visPlanPunkt() {
+  const { start, via, mal } = planIdar(), l = [];
+  if (start) l.push([start, 'S']);
+  via.forEach((v, i) => l.push([v, String(i + 1)]));
+  if (mal && !$('p-rund').checked) l.push([mal, 'M']);
+  settPlanPunkt(l);
+}
+function melding(t) { const m = $('p-melding'); m.hidden = !t; m.textContent = t || ''; }
+
+function lagEigenTur() {
+  const { start, via, mal } = planIdar();
+  if (!start) return melding('Vel kvar turen skal starte.');
+  if (!mal) return melding('Vel mål, eller kryss av for rundtur.');
+  const idar = [start, ...via, mal];
+  const r = byggRute(idar.map(id => STAD[id].node));
+  if (!r) return melding(start === mal && !via.length
+    ? 'For ein rundtur må du leggje til minst eitt viapunkt.' : 'Fann inga rute mellom desse stadene.');
+  melding('');
+  const namn = $('p-rund').checked
+    ? 'Rundtur frå ' + STAD[start].namn + (via.length ? ' via ' + via.map(v => STAD[v].namn).join(', ') : '')
+    : idar.map(id => STAD[id].namn).join(' → ');
+  const merk = [];
+  if (r.lia) merk.push('Ruta går gjennom Lia. Lia er ulendt med klatring på alle fire, berre for folk i god form. Ferdselsforbod 1. mai til 31. juli (Haramsøya vestside naturreservat).');
+  else if (hekketid()) merk.push('Lia er stengd no (ferdselsforbod 1. mai til 31. juli), så ruta går utanom.');
+  if (r.veg) merk.push('Delar av ruta går langs fylkesvegen.');
+  visTur({ type: 'Feature', geometry: { type: 'LineString', coordinates: r.coords },
+    properties: { eigen: true, namn, lengd: r.lengd, stigning: r.stigning, tid: r.tid, popularitet: null,
+      skildring: merk.join(' ') || null, parkering: null, profil: r.pr } });
+  history.replaceState(null, '', '#eigen=' + idar.join(',') + ($('p-rund').checked ? ',rund' : ''));
 }
 
 // ───────────── Animasjon ─────────────
@@ -541,8 +769,20 @@ function avstand(a, b) {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 function lesAdresse() {
-  const m = location.hash.match(/tur=(\d+)/);
-  if (m) velTur(Number(m[1]));
+  const m = location.hash.match(/#tur=(\d+)/);
+  if (m) return velTur(Number(m[1]));
+  const e = location.hash.match(/#eigen=([\w,]+)/);
+  if (e) {
+    const del = e[1].split(','), rund = del[del.length - 1] === 'rund';
+    const idar = del.filter(x => STAD[x]);
+    if (idar.length < 2) return;
+    $('p-via').innerHTML = '';
+    $('p-start').value = idar[0];
+    idar.slice(1, -1).forEach(v => leggTilVia(v));
+    $('p-rund').checked = rund; $('p-mal-l').hidden = rund;
+    if (!rund) $('p-mal').value = idar[idar.length - 1];
+    visModus('plan'); visPlanPunkt(); lagEigenTur();
+  }
 }
 
 teiknListe();
