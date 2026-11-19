@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-<script src="data.js?v=202611192219"></script>
-<script src="ikon.js?v=202611192219"></script>
+<script src="data.js?v=202611192221"></script>
+<script src="ikon.js?v=202611192221"></script>
 <style>
   :root {
     --ink: #2B211E; --muted: #6b625e; --line: #e4e0db; --paper: #FAF8F5;
@@ -319,7 +319,7 @@ map.addControl(new AlleStiar(), MOBIL ? 'top-left' : 'top-right');
 
 // ───────────── Teiknforklaring med filter ─────────────
 // Rekkjefølgje som på plakaten. Klikk på ei rad for å skjule/vise symbolet.
-const KATEGORIAR = [['turmal', 'Turmål'], ['startpunkt', 'Startpunkt'], ['teltplass', 'Teltplass'], ['parkering', 'Parkering'],
+const KATEGORIAR = [['turmal', 'Turmål'], ['teltplass', 'Teltplass'], ['parkering', 'Parkering'],
   ['bobilparkering', 'Bobilparkering'], ['badeplass', 'Badeplass'], ['vannsport', 'Vannsport'],
   ['wc', 'Toalett'], ['butikk', 'Butikk']].filter(([k]) => window.TURIKON && TURIKON[k]);
 const skjult = new Set();
@@ -350,7 +350,7 @@ map.addControl(new Teiknforklaring(), 'top-right');
 function brukFilter() {
   document.querySelectorAll('.tf-liste [data-k]').forEach(b => b.setAttribute('aria-pressed', !skjult.has(b.dataset.k)));
   if (!map.getLayer || !map.getLayer('fasilitetar')) return;
-  for (const l of ['turmal', 'parkering', 'startpunkt']) if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', skjult.has(l) ? 'none' : 'visible');
+  for (const l of ['turmal', 'parkering']) if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', skjult.has(l) ? 'none' : 'visible');
   map.setFilter('fasilitetar', skjult.size ? ['!', ['in', ['get', 'type'], ['literal', [...skjult]]]] : null);
 }
 
@@ -359,16 +359,13 @@ map.on('style.load', async () => {
   leggTilLag();
 });
 map.once('load', () => {
-  for (const l of ['turmal', 'parkering', 'fasilitetar', 'startpunkt']) {
+  for (const l of ['turmal', 'parkering', 'fasilitetar']) {
     map.on('mouseenter', l, () => map.getCanvas().style.cursor = 'pointer');
     map.on('mouseleave', l, () => map.getCanvas().style.cursor = '');
   }
   map.on('click', 'parkering', e => new mapboxgl.Popup({ offset: 12 })
     .setLngLat(e.features[0].geometry.coordinates)
     .setText('Parkering: ' + e.features[0].properties.name).addTo(map));
-  map.on('click', 'startpunkt', e => new mapboxgl.Popup({ offset: 12 })
-    .setLngLat(e.features[0].geometry.coordinates)
-    .setText('Startpunkt: ' + e.features[0].properties.name).addTo(map));
   map.on('click', 'fasilitetar', e => {
     const p = e.features[0].properties;
     new mapboxgl.Popup({ offset: 14 }).setLngLat(e.features[0].geometry.coordinates)
@@ -392,7 +389,6 @@ function leggTilLag() {
   map.addSource('punkt', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   map.addSource('turmal', { type: 'geojson', data: D.turmal });
   map.addSource('parkering', { type: 'geojson', data: D.parkering });
-  map.addSource('startpunkt', { type: 'geojson', data: D.startpunkt || { type: 'FeatureCollection', features: [] } });
   map.addSource('fasilitetar', { type: 'geojson', data: D.fasilitetar || { type: 'FeatureCollection', features: [] } });
 
   // Heile stinettet, tjukkare der det er mykje brukt (utan kvit kant)
@@ -425,11 +421,6 @@ function leggTilLag() {
     layout: { 'icon-image': 'parkering', 'icon-size': ['interpolate', ['linear'], ['zoom'], 12, .7, 16, 1.1], 'icon-allow-overlap': true } });
   map.addLayer({ id: 'fasilitetar', type: 'symbol', source: 'fasilitetar',
     layout: { 'icon-image': ['get', 'type'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 12, .7, 16, 1.1], 'icon-allow-overlap': true } });
-  map.addLayer({ id: 'startpunkt', type: 'symbol', source: 'startpunkt',
-    layout: { 'icon-image': 'startpunkt', 'icon-size': ['interpolate', ['linear'], ['zoom'], 12, .7, 16, 1.1], 'icon-allow-overlap': true,
-      'text-field': ['step', ['zoom'], '', 14, ['get', 'name']], 'text-size': 12, 'text-anchor': 'left', 'text-offset': [1.2, 0],
-      'text-optional': true, 'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'] },
-    paint: { 'text-color': '#2B211E', 'text-halo-color': '#fff', 'text-halo-width': 1.4 } });
   map.addLayer({ id: 'turmal', type: 'symbol', source: 'turmal',
     layout: { 'icon-image': 'turmal', 'icon-anchor': 'bottom', 'icon-size': ['interpolate', ['linear'], ['zoom'], 12, .8, 16, 1.2],
       'icon-allow-overlap': true,
